@@ -11,27 +11,21 @@ const App = () => {
     'Programming without an extremely heavy use of console.log is same as if a doctor would refuse to use x-rays or blood tests when diagnosing patients.',
     'The only way to go fast, is to go well.'
   ]
-
-  // состояние: индекс текущего анекдота
   const [selected, setSelected] = useState(0)
 
-  // состояние: массив голосов для каждого анекдота
   const [votes, setVotes] = useState(Array(anecdotes.length).fill(0))
 
-  // обработчик кнопки "Next anecdote"
   const handleNext = () => {
     const randomIndex = Math.floor(Math.random() * anecdotes.length)
     setSelected(randomIndex)
   }
 
-  // обработчик кнопки "Vote"
   const handleVote = () => {
     const copy = [...votes]
     copy[selected] += 1
     setVotes(copy)
   }
 
-  // определим индекс анекдота с максимальным числом голосов
   const maxVotes = Math.max(...votes)
   const topAnecdoteIndex = votes.indexOf(maxVotes)
 
