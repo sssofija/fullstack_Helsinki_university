@@ -1,29 +1,8 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-
-const Filter = ({ filter, handleFilterChange }) => (
-  <div>
-    filter shown with: <input value={filter} onChange={handleFilterChange} />
-  </div>
-)
-
-const PersonForm = ({ addPerson, newName, handleNameChange, newNumber, handleNumberChange }) => (
-  <form onSubmit={addPerson}>
-    <div>name: <input value={newName} onChange={handleNameChange} /></div>
-    <div>number: <input value={newNumber} onChange={handleNumberChange} /></div>
-    <div><button type="submit">add</button></div>
-  </form>
-)
-
-const Persons = ({ personsToShow }) => (
-  <div>
-    {personsToShow.map(person =>
-      <div key={person.id}>
-        {person.name} {person.number}
-      </div>
-    )}
-  </div>
-)
+import personsService from '../services/persons'
+import Filter from './components/Filter'
+import PersonForm from './components/PersonForm'
+import Persons from './components/Persons'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -32,62 +11,70 @@ const App = () => {
   const [filter, setFilter] = useState('')
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
-      })
+    personsService.getAll().then(initial => {
+      setPersons(initial)
+    })
   }, [])
-
-  const handleNameChange = (event) => {
-    setNewName(event.target.value)
-  }
-
-  const handleNumberChange = (event) => {
-    setNewNumber(event.target.value)
-  }
-
-  const handleFilterChange = (event) => {
-    setFilter(event.target.value)
-  }
 
   const addPerson = (event) => {
     event.preventDefault()
-    const nameExists = persons.some(person => person.name === newName)
-    if (nameExists) {
-      alert(`${newName} is already added to phonebook`)
+    const existing = persons.find(p => p.name === newName)
+
+    if (existing) {
+      const ok = window.confirm(`${newName} is already added to phonebook. Replace the number?`)
+      if (ok) {
+        const updated = { ...existing, number: newNumber }
+        personsService
+          .update(existing.id, updated)
+          .then(returned => {
+            setPersons(persons.map(p => p.id !== existing.id ? p : returned))
+            setNewName('')
+            setNewNumber('')
+          })
+          .catch(() => {
+            alert(`${newName} was already deleted from server`)
+            setPersons(persons.filter(p => p.id !== existing.id))
+          })
+      }
       return
     }
 
-    const newPerson = {
-      name: newName,
-      number: newNumber,
-      id: (persons.length + 1).toString()
-    }
+    const newPerson = { name: newName, number: newNumber }
 
-    setPersons(persons.concat(newPerson))
-    setNewName('')
-    setNewNumber('')
+    personsService.create(newPerson).then(returned => {
+      setPersons([...persons, returned])
+      setNewName('')
+      setNewNumber('')
+    })
   }
 
-  const personsToShow = persons.filter(person =>
-    person.name.toLowerCase().includes(filter.toLowerCase())
-  )
+  const handleDelete = (id) => {
+    const person = persons.find(p => p.id === id)
+    if (window.confirm(`Delete ${person.name}?`)) {
+      personsService.remove(id).then(() => {
+        setPersons(persons.filter(p => p.id !== id))
+      })
+    }
+  }
+
+  const filtered = persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
 
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter filter={filter} handleFilterChange={handleFilterChange} />
+      <Filter value={filter} onChange={e => setFilter(e.target.value)} />
+
       <h3>Add a new</h3>
       <PersonForm
-        addPerson={addPerson}
-        newName={newName}
-        handleNameChange={handleNameChange}
-        newNumber={newNumber}
-        handleNumberChange={handleNumberChange}
+        onSubmit={addPerson}
+        nameValue={newName}
+        onNameChange={e => setNewName(e.target.value)}
+        numberValue={newNumber}
+        onNumberChange={e => setNewNumber(e.target.value)}
       />
+
       <h3>Numbers</h3>
-      <Persons personsToShow={personsToShow} />
+      <Persons persons={filtered} onDelete={handleDelete} />
     </div>
   )
 }
