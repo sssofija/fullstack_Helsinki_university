@@ -1,4 +1,10 @@
-const PersonForm = ({ onSubmit, nameValue, onNameChange, numberValue, onNumberChange }) => (
+const PersonForm = ({
+  onSubmit,
+  nameValue,
+  onNameChange,
+  numberValue,
+  onNumberChange,
+}) => (
   <form onSubmit={onSubmit}>
     <div>
       name: <input value={nameValue} onChange={onNameChange} />
