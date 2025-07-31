@@ -1,11 +1,30 @@
 const express = require('express')
 const cors = require('cors')
 const db = require('./db.json')
+const morgan = require('morgan')
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+
+morgan.token('body', (req) => JSON.stringify(req.body))
+
+app.use(
+  morgan((tokens, req, res) => {
+    const basic = [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens.res(req, res, 'content-length'), '-',
+      tokens['response-time'](req, res), 'ms'
+    ].join(' ')
+
+    return req.method === 'POST'
+      ? `${basic} ${tokens.body(req, res)}`
+      : basic
+  })
+)
 
 let persons = db.persons.map(p => ({
   ...p,
