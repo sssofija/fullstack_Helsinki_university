@@ -26,6 +26,10 @@ app.use(
   })
 )
 
+app.get('/', (req, res) => {
+  res.send('<h1>Phonebook backend is running</h1>')
+})
+
 let persons = db.persons.map(p => ({
   ...p,
   id: Number(p.id)
