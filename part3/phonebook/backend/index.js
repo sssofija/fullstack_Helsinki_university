@@ -6,73 +6,84 @@ const Person = require('./models/person')
 
 const app = express()
 
-// Удаляем лишние кавычки из переменной окружения
-let allowedOrigin = process.env.CORS_ORIGIN || '*'
-allowedOrigin = allowedOrigin.replace(/^'+|'+$/g, '') // удаляет одинарные кавычки с начала и конца
+const allowedOrigins = [process.env.CORS_ORIGIN]
 
-console.log('CORS_ORIGIN:', allowedOrigin)
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.'
+      return callback(new Error(msg), false)
+    }
+    return callback(null, true)
+  }
+}))
 
-// CORS + Preflight
-app.use(cors({ origin: allowedOrigin }))
-app.options('*', cors({ origin: allowedOrigin })) // обрабатывает OPTIONS-запросы
+app.use(express.json())
 
 morgan.token('body', req => JSON.stringify(req.body))
-
-app.use(express.static('dist'))
-app.use(express.json())
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-app.get('/info', (req, res) => {
-  const date = new Date().toString()
-  Person.countDocuments({})
-    .then(count => {
-      res.send(`
-        <p>Phonebook has info for ${count} people</p>
-        <p>${date}</p>
-      `)
-    })
+app.get('/info', async (req, res, next) => {
+  try {
+    const count = await Person.countDocuments({})
+    res.send(`<p>Phonebook has info for ${count} people</p><p>${new Date()}</p>`)
+  } catch (error) {
+    next(error)
+  }
 })
 
-app.get('/api/persons', (req, res) => {
-  Person.find({}).then(persons => res.json(persons))
+app.get('/api/persons', async (req, res, next) => {
+  try {
+    const persons = await Person.find({})
+    res.json(persons)
+  } catch (error) {
+    next(error)
+  }
 })
 
-app.get('/api/persons/:id', (req, res, next) => {
-  Person.findById(req.params.id)
-    .then(person => {
-      if (person) res.json(person)
-      else res.status(404).end()
-    })
-    .catch(error => next(error))
+app.get('/api/persons/:id', async (req, res, next) => {
+  try {
+    const person = await Person.findById(req.params.id)
+    if (person) res.json(person)
+    else res.status(404).end()
+  } catch (error) {
+    next(error)
+  }
 })
 
-app.post('/api/persons', (req, res, next) => {
-  const { name, number } = req.body
-
-  const person = new Person({ name, number })
-
-  person.save()
-    .then(saved => res.json(saved))
-    .catch(error => next(error))
+app.post('/api/persons', async (req, res, next) => {
+  try {
+    const { name, number } = req.body
+    const person = new Person({ name, number })
+    const saved = await person.save()
+    res.json(saved)
+  } catch (error) {
+    next(error)
+  }
 })
 
-app.put('/api/persons/:id', (req, res, next) => {
-  const { name, number } = req.body
-
-  Person.findById(req.params.id)
-    .then(person => {
-      if (!person) return res.status(404).end()
-      person.name = name
-      person.number = number
-      return person.save().then(updated => res.json(updated))
-    })
-    .catch(error => next(error))
+app.put('/api/persons/:id', async (req, res, next) => {
+  try {
+    const { name, number } = req.body
+    const updated = await Person.findByIdAndUpdate(
+      req.params.id,
+      { name, number },
+      { new: true, runValidators: true, context: 'query' }
+    )
+    res.json(updated)
+  } catch (error) {
+    next(error)
+  }
 })
 
-app.delete('/api/persons/:id', (req, res, next) => {
-  Person.findByIdAndDelete(req.params.id)
-    .then(() => res.status(204).end())
-    .catch(error => next(error))
+app.delete('/api/persons/:id', async (req, res, next) => {
+  try {
+    await Person.findByIdAndDelete(req.params.id)
+    res.status(204).end()
+  } catch (error) {
+    next(error)
+  }
 })
 
 app.use((req, res) => {
@@ -85,6 +96,8 @@ app.use((error, req, res, next) => {
     return res.status(400).send({ error: 'malformatted id' })
   } else if (error.name === 'ValidationError') {
     return res.status(400).json({ error: error.message })
+  } else if (error.message && error.message.includes('CORS')) {
+    return res.status(401).json({ error: error.message })
   }
   next(error)
 })
