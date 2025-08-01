@@ -1,7 +1,7 @@
 //import url from './renameMongo'
 
 const mongoose = require('mongoose')
-const Person = require('./models/person')
+const Person = require('./person')
 
 if (process.argv.length < 3) {
   console.log('Please provide the password as an argument')
