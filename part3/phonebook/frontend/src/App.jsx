@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
-import personsService from '../services/persons'
+import { useEffect, useState } from 'react'
+
 import Filter from './components/Filter'
+import Notification from './components/Notification'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
-import Notification from './components/Notification'
+import personService from './services/persons'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -13,100 +14,115 @@ const App = () => {
   const [notification, setNotification] = useState({ message: null, type: '' })
 
   useEffect(() => {
-    personsService.getAll().then(initial => {
-      setPersons(initial)
-    })
+    personService.getAll().then(setPersons)
   }, [])
 
-  const showNotification = (message, type = 'success') => {
+  const clearForm = () => {
+    setNewName('')
+    setNewNumber('')
+  }
+
+  const notifyWith = (message, type = 'success') => {
     setNotification({ message, type })
     setTimeout(() => {
       setNotification({ message: null, type: '' })
     }, 5000)
   }
 
-  const addPerson = (event) => {
-    event.preventDefault()
-    const existing = persons.find(p => p.name === newName)
+  const updatePerson = person => {
+    const confirmUpdate = window.confirm(
+      `${newName} is already added to phonebook. Replace the number?`
+    )
+    if (!confirmUpdate) return
 
-    if (existing) {
-      const ok = window.confirm(
-        `${newName} is already added to phonebook. Replace the number?`
-      )
-      if (ok) {
-        const updated = { ...existing, number: newNumber }
-        personsService
-          .update(existing.id, updated)
-          .then(returned => {
-            setPersons(persons.map(p => p.id !== existing.id ? p : returned))
-            showNotification(`Updated number for ${returned.name}`, 'success')
-            setNewName('')
-            setNewNumber('')
-          })
-          .catch(error => {
-            showNotification(
-              error.response?.data?.error || 'Error updating person',
-              'error'
-            )
-            setPersons(persons.filter(p => p.id !== existing.id))
-          })
-      }
+    const updatedPerson = { ...person, number: newNumber }
+
+    personService
+      .update(person.id, updatedPerson)
+      .then(returned => {
+        setPersons(persons.map(p => (p.id !== person.id ? p : returned)))
+        notifyWith(`Updated number for ${returned.name}`, 'success')
+        clearForm()
+      })
+      .catch(error => {
+        if (error.response?.status === 400) {
+          notifyWith(error.response.data.error, 'error')
+        } else if (error.response?.status === 404) {
+          notifyWith(
+            `Information of ${person.name} has already been removed from server`,
+            'error'
+          )
+          setPersons(persons.filter(p => p.id !== person.id))
+        } else {
+          notifyWith('An unexpected error occurred', 'error')
+        }
+      })
+  }
+
+  const onAddNew = event => {
+    event.preventDefault()
+    const existingPerson = persons.find(p => p.name === newName)
+
+    if (existingPerson) {
+      updatePerson(existingPerson)
       return
     }
 
     const newPerson = { name: newName, number: newNumber }
 
-    personsService.create(newPerson)
-      .then(returned => {
-        setPersons([...persons, returned])
-        showNotification(`Added ${returned.name}`, 'success')
-        setNewName('')
-        setNewNumber('')
+    personService
+      .create(newPerson)
+      .then(created => {
+        setPersons([...persons, created])
+        notifyWith(`Added ${created.name}`, 'success')
+        clearForm()
       })
       .catch(error => {
-        showNotification(error.response?.data?.error || 'Error adding person', 'error')
+        notifyWith(error.response?.data?.error || 'Error adding person', 'error')
       })
   }
 
-  const handleDelete = (id) => {
-    const person = persons.find(p => p.id === id)
-    if (window.confirm(`Delete ${person.name}?`)) {
-      personsService.remove(id)
-        .then(() => {
-          setPersons(persons.filter(p => p.id !== id))
-          showNotification(`Deleted ${person.name}`, 'delete')
-        })
-        .catch(() => {
-          showNotification(
-            `${person.name} was already removed from the server`,
-            'error'
-          )
-          setPersons(persons.filter(p => p.id !== id))
-        })
-    }
+  const onRemove = person => {
+    const confirmDelete = window.confirm(`Delete ${person.name}?`)
+    if (!confirmDelete) return
+
+    personService
+      .remove(person.id)
+      .then(() => {
+        setPersons(persons.filter(p => p.id !== person.id))
+        notifyWith(`Deleted ${person.name}`, 'delete')
+      })
+      .catch(() => {
+        notifyWith(
+          `${person.name} was already removed from the server`,
+          'error'
+        )
+        setPersons(persons.filter(p => p.id !== person.id))
+      })
   }
 
-  const filtered = persons.filter(p =>
+  const personsToShow = persons.filter(p =>
     p.name.toLowerCase().includes(filter.toLowerCase())
   )
 
   return (
     <div>
-      <h2>Phonebook</h2>
+      <h1>Phonebook</h1>
       <Notification message={notification.message} type={notification.type} />
-      <Filter value={filter} onChange={e => setFilter(e.target.value)} />
 
-      <h3>Add a new</h3>
+      <Filter filter={filter} setFilter={setFilter} />
+
+      <h2>Add a new</h2>
       <PersonForm
-        onSubmit={addPerson}
-        nameValue={newName}
-        onNameChange={e => setNewName(e.target.value)}
-        numberValue={newNumber}
-        onNumberChange={e => setNewNumber(e.target.value)}
+        onAddNew={onAddNew}
+        newName={newName}
+        newNumber={newNumber}
+        setNewName={setNewName}
+        setNewNumber={setNewNumber}
       />
 
-      <h3>Numbers</h3>
-      <Persons persons={filtered} onDelete={handleDelete} />
+      <h2>Numbers</h2>
+      <Persons persons={personsToShow} onRemove={onRemove} />
     </div>
   )
 }

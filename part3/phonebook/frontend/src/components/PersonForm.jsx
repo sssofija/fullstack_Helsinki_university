@@ -1,16 +1,16 @@
 const PersonForm = ({
-  onSubmit,
-  nameValue,
-  onNameChange,
-  numberValue,
-  onNumberChange,
+  onAddNew,
+  newName,
+  newNumber,
+  setNewName,
+  setNewNumber,
 }) => (
-  <form onSubmit={onSubmit}>
+  <form onSubmit={onAddNew}>
     <div>
-      name: <input value={nameValue} onChange={onNameChange} />
+      name: <input value={newName} onChange={(e) => setNewName(e.target.value)} />
     </div>
     <div>
-      number: <input value={numberValue} onChange={onNumberChange} />
+      number: <input value={newNumber} onChange={(e) => setNewNumber(e.target.value)} />
     </div>
     <div>
       <button type="submit">add</button>

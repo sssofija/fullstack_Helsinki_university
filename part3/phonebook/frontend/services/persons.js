@@ -14,10 +14,11 @@ const update = (id, updatedPerson) =>
 const remove = (id) =>
   axios.delete(`${baseUrl}/${id}`)
 
-export default {
+const personService = {
   getAll,
   create,
   update,
   remove
 }
 
+export default personService
