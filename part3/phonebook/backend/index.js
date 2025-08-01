@@ -6,113 +6,88 @@ const Person = require('./models/person')
 
 const app = express()
 
-const allowedOrigin = process.env.CORS_ORIGIN || '*'
-console.log('CORS_ORIGIN:', allowedOrigin);
+// Удаляем лишние кавычки из переменной окружения
+let allowedOrigin = process.env.CORS_ORIGIN || '*'
+allowedOrigin = allowedOrigin.replace(/^'+|'+$/g, '') // удаляет одинарные кавычки с начала и конца
 
+console.log('CORS_ORIGIN:', allowedOrigin)
 
-app.use(cors({
-  origin: allowedOrigin
-}))
+// CORS + Preflight
+app.use(cors({ origin: allowedOrigin }))
+app.options('*', cors({ origin: allowedOrigin })) // обрабатывает OPTIONS-запросы
 
 morgan.token('body', req => JSON.stringify(req.body))
 
 app.use(express.static('dist'))
 app.use(express.json())
-app.use(
-  morgan(':method :url :status :res[content-length] - :response-time ms :body')
-)
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-app.get('/info', (request, response) => {
+app.get('/info', (req, res) => {
   const date = new Date().toString()
-  Person.countDocuments({}).then(count => {
-    const html = `
-      <p>Phonebook has info for ${count} people</p>
-      <p>${date}</p>
-      `
-    response.send(html)
-  })
+  Person.countDocuments({})
+    .then(count => {
+      res.send(`
+        <p>Phonebook has info for ${count} people</p>
+        <p>${date}</p>
+      `)
+    })
 })
 
-app.get('/api/persons', (request, response) => {
-  Person.find({}).then(persons => {
-    response.json(persons)
-  })
+app.get('/api/persons', (req, res) => {
+  Person.find({}).then(persons => res.json(persons))
 })
 
-app.get('/api/persons/:id', (request, response, next) => {
-  Person.findById(request.params.id)
+app.get('/api/persons/:id', (req, res, next) => {
+  Person.findById(req.params.id)
     .then(person => {
-      if (person) {
-        response.json(person)
-      } else {
-        response.status(404).end()
-      }
+      if (person) res.json(person)
+      else res.status(404).end()
     })
     .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response, next) => {
-  const { name, number } = request.body
+app.post('/api/persons', (req, res, next) => {
+  const { name, number } = req.body
 
-  const person = new Person({
-    name,
-    number
-  })
+  const person = new Person({ name, number })
 
-  person
-    .save()
-    .then(savedPerson => {
-      response.json(savedPerson)
-    })
+  person.save()
+    .then(saved => res.json(saved))
     .catch(error => next(error))
 })
 
-app.put('/api/persons/:id', (request, response, next) => {
-  const { name, number } = request.body
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body
 
-  Person.findById(request.params.id)
+  Person.findById(req.params.id)
     .then(person => {
-      if (!person) {
-        return response.status(404).end()
-      }
-
+      if (!person) return res.status(404).end()
       person.name = name
       person.number = number
-
-      return person.save().then(updatedPerson => {
-        response.json(updatedPerson)
-      })
+      return person.save().then(updated => res.json(updated))
     })
     .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (request, response, next) => {
-  Person.findByIdAndDelete(request.params.id)
-    .then(() => {
-      response.status(204).end()
-    })
+app.delete('/api/persons/:id', (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then(() => res.status(204).end())
     .catch(error => next(error))
 })
 
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: 'unknown endpoint' })
-}
+app.use((req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' })
+})
 
-app.use(unknownEndpoint)
-
-const errorHandler = (error, request, response, next) => {
+app.use((error, req, res, next) => {
   console.error(error.message)
-
   if (error.name === 'CastError') {
-    return response.status(400).send({ error: 'malformatted id' })
+    return res.status(400).send({ error: 'malformatted id' })
   } else if (error.name === 'ValidationError') {
-    return response.status(400).json({ error: error.message })
+    return res.status(400).json({ error: error.message })
   }
-
   next(error)
-}
-
-app.use(errorHandler)
+})
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
