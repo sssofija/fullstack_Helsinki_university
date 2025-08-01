@@ -43,9 +43,9 @@ const App = () => {
             setNewName('')
             setNewNumber('')
           })
-          .catch(() => {
+          .catch(error => {
             showNotification(
-              `${newName} was already removed from the server`,
+              error.response?.data?.error || 'Error updating person',
               'error'
             )
             setPersons(persons.filter(p => p.id !== existing.id))
@@ -56,12 +56,16 @@ const App = () => {
 
     const newPerson = { name: newName, number: newNumber }
 
-    personsService.create(newPerson).then(returned => {
-      setPersons([...persons, returned])
-      showNotification(`Added ${returned.name}`, 'success')
-      setNewName('')
-      setNewNumber('')
-    })
+    personsService.create(newPerson)
+      .then(returned => {
+        setPersons([...persons, returned])
+        showNotification(`Added ${returned.name}`, 'success')
+        setNewName('')
+        setNewNumber('')
+      })
+      .catch(error => {
+        showNotification(error.response?.data?.error || 'Error adding person', 'error')
+      })
   }
 
   const handleDelete = (id) => {
@@ -70,7 +74,7 @@ const App = () => {
       personsService.remove(id)
         .then(() => {
           setPersons(persons.filter(p => p.id !== id))
-          showNotification(`Deleted ${person.name}`, 'delete') 
+          showNotification(`Deleted ${person.name}`, 'delete')
         })
         .catch(() => {
           showNotification(
