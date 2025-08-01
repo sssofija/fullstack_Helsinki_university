@@ -16,3 +16,5 @@ describe('average', () => {
     assert.strictEqual(average([]), 0)
   })
 })
+
+//npm test
