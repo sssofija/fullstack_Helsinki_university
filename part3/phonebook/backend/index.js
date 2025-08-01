@@ -7,6 +7,8 @@ const Person = require('./models/person')
 const app = express()
 
 const allowedOrigin = process.env.CORS_ORIGIN || '*'
+console.log('CORS_ORIGIN:', allowedOrigin);
+
 
 app.use(cors({
   origin: allowedOrigin
