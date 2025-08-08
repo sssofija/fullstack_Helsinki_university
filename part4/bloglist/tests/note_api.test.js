@@ -74,6 +74,39 @@ test('missing title and url return 400', async () => {
   expect(notesAtEnd).toHaveLength(initialNotes.length)
 })
 
+test('a note can be deleted', async () => {
+  const notesAtStart = await Note.find({})
+  const noteToDelete = notesAtStart[0]
+
+  await api
+    .delete(`/api/notes/${noteToDelete.id}`)
+    .expect(204)
+
+  const notesAtEnd = await Note.find({})
+  expect(notesAtEnd).toHaveLength(initialNotes.length - 1)
+
+  const titles = notesAtEnd.map(n => n.title)
+  expect(titles).not.toContain(noteToDelete.title)
+})
+
+test('a note can be updated', async () => {
+  const notesAtStart = await Note.find({})
+  const noteToUpdate = notesAtStart[0]
+
+  const updatedData = { likes: noteToUpdate.likes + 1 }
+
+  const response = await api
+    .put(`/api/notes/${noteToUpdate.id}`)
+    .send(updatedData)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  expect(response.body.likes).toBe(noteToUpdate.likes + 1)
+
+  const updatedNote = await Note.findById(noteToUpdate.id)
+  expect(updatedNote.likes).toBe(noteToUpdate.likes + 1)
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })
