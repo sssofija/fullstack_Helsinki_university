@@ -1,58 +1,70 @@
-const dummy = (blogs) => {
+const dummy = blogs => {
   return 1
 }
 
-const totalLikes = (blogs) => {
+const totalLikes = blogs => {
   return blogs.reduce((sum, blog) => sum + blog.likes, 0)
 }
 
-const favoriteBlog = (blogs) => {
-  if (blogs.length === 0) return null
-  return blogs.reduce((fav, blog) => (blog.likes > fav.likes ? blog : fav), blogs[0])
+const favoriteBlog = blogs => {
+  return blogs.reduce(
+    (favorite, blog) => (favorite.likes > blog.likes ? favorite : blog),
+    {}
+  )
 }
 
-const mostBlogs = (blogs) => {
-  if (blogs.length === 0) return null
-
-  const counts = {}
-
-  for (const blog of blogs) {
-    counts[blog.author] = (counts[blog.author] || 0) + 1
+const mostBlogs = blogs => {
+  if (!blogs.length) {
+    return null
   }
 
-  const topAuthor = Object.keys(counts).reduce((a, b) =>
-    counts[a] > counts[b] ? a : b
-  )
+  const blogsPerAuthor = blogs.reduce((acc, blog) => {
+    acc[blog.author] = (acc[blog.author] || 0) + 1
+    return acc
+  }, {})
+
+  let maxAuthor = Object.keys(blogsPerAuthor)[0]
+
+  for (const author in blogsPerAuthor) {
+    if (blogsPerAuthor[author] > blogsPerAuthor[maxAuthor]) {
+      maxAuthor = author
+    }
+  }
 
   return {
-    author: topAuthor,
-    blogs: counts[topAuthor]
+    author: maxAuthor,
+    blogs: blogsPerAuthor[maxAuthor]
   }
 }
 
-const mostLikes = (blogs) => {
-  if (blogs.length === 0) return null
-
-  const likes = {}
-
-  for (const blog of blogs) {
-    likes[blog.author] = (likes[blog.author] || 0) + blog.likes
+const mostLikes = blogs => {
+  if (!blogs.length) {
+    return null
   }
 
-  const topAuthor = Object.keys(likes).reduce((a, b) =>
-    likes[a] > likes[b] ? a : b
-  )
+  const likesPerAuthor = blogs.reduce((acc, blog) => {
+    acc[blog.author] = (acc[blog.author] || 0) + blog.likes
+    return acc
+  }, {})
+
+  let maxAuthor = Object.keys(likesPerAuthor)[0]
+
+  for (const author in likesPerAuthor) {
+    if (likesPerAuthor[author] > likesPerAuthor[maxAuthor]) {
+      maxAuthor = author
+    }
+  }
 
   return {
-    author: topAuthor,
-    likes: likes[topAuthor]
+    author: maxAuthor,
+    likes: likesPerAuthor[maxAuthor]
   }
 }
 
 module.exports = {
   dummy,
-  totalLikes,
   favoriteBlog,
   mostBlogs,
-  mostLikes
+  mostLikes,
+  totalLikes
 }

@@ -1,74 +1,81 @@
-const logger = require('./logger')
 const jwt = require('jsonwebtoken')
+const logger = require('./logger')
 const User = require('../models/user')
 
-const requestLogger = (req, res, next) => {
-  logger.info('Method:', req.method)
-  logger.info('Path:  ', req.path)
-  logger.info('Body:  ', req.body)
+const requestLogger = (request, response, next) => {
+  logger.info('Method:', request.method)
+  logger.info('Path:  ', request.path)
+  logger.info('Body:  ', request.body)
   logger.info('---')
   next()
 }
 
-const unknownEndpoint = (req, res) => {
-  res.status(404).json({ error: 'unknown endpoint' })
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
 }
 
-const errorHandler = (error, req, res, next) => {
+const errorHandler = (error, request, response, next) => {
   logger.error(error.message)
 
   if (error.name === 'CastError') {
-    return res.status(400).json({ error: 'malformatted id' })
-  }
-
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({ error: error.message })
-  }
-
-  if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({ error: 'token invalid' })
-  }
-
-  if (error.name === 'TokenExpiredError') {
-    return res.status(401).json({ error: 'token expired' })
-  }
-
-  if (error.code && error.code === 11000) {
-    return res.status(400).json({ error: 'username must be unique' })
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  } else if (
+    error.name === 'MongoServerError' &&
+    error.message.includes('E11000 duplicate key error')
+  ) {
+    return response
+      .status(400)
+      .json({ error: 'expected username to be unique' })
+  } else if (error.name === 'JsonWebTokenError') {
+    return response.status(401).json({ error: 'token missing or invalid' })
   }
 
   next(error)
 }
 
-const getTokenFrom = req => {
-  const auth = req.get('authorization')
-  if (auth && auth.toLowerCase().startsWith('bearer ')) {
-    return auth.substring(7)
+const tokenExtractor = (request, response, next) => {
+  request.token = null
+  const authorization = request.get('authorization')
+
+  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+    request.token = authorization.substring(7)
   }
-  return null
+
+  next()
 }
 
-const userExtractor = async (req, res, next) => {
-  const token = getTokenFrom(req)
-  if (!token) {
-    return res.status(401).json({ error: 'token missing' })
+const userExtractor = async (request, response, next) => {
+  if (!request.token) {
+    return response.status(401).json({ error: 'token missing' })
   }
+
+  let decodedToken
   try {
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!decodedToken.id) {
-      return res.status(401).json({ error: 'token invalid' })
-    }
-    req.user = await User.findById(decodedToken.id)
-    next()
+    decodedToken = jwt.verify(request.token, process.env.SECRET)
   } catch (error) {
-    next(error)  
+    return response.status(401).json({ error: 'token invalid' })
   }
+
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token invalid' })
+  }
+
+  const user = await User.findById(decodedToken.id)
+
+  if (!user) {
+    return response.status(401).json({ error: 'user not found' })
+  }
+
+  request.user = user
+  next()
 }
 
 module.exports = {
   requestLogger,
   unknownEndpoint,
   errorHandler,
-  userExtractor,
-  getTokenFrom
+  tokenExtractor,
+  userExtractor
 }

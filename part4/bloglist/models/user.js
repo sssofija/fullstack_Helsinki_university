@@ -1,17 +1,20 @@
 const mongoose = require('mongoose')
 
-const userSchema = new mongoose.Schema({
+const userSchema = mongoose.Schema({
+  blogs: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Blog'
+    }
+  ],
   username: {
     type: String,
-    required: [true, 'Username is required'],
-    unique: true,
-    // minlength убираем, чтобы валидация длины была в роутере
+    minlength: 3,
+    required: true,
+    unique: true
   },
   name: String,
-  passwordHash: {
-    type: String,
-    required: [true, 'Password hash is required']
-  }
+  passwordHash: String
 })
 
 userSchema.set('toJSON', {
@@ -23,4 +26,6 @@ userSchema.set('toJSON', {
   }
 })
 
-module.exports = mongoose.model('User', userSchema)
+const User = mongoose.model('User', userSchema)
+
+module.exports = User
