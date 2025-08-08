@@ -5,7 +5,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node index.js",
     "dev": "cross-env NODE_ENV=development node --watch index.js",
-    "test": "cross-env  NODE_ENV=test node --test",
+    "test": "cross-env NODE_ENV=test jest --verbose",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "mongoose": "^8.17.0"
   },
   "devDependencies": {
+    "jest": "^30.0.5",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4"
   }
