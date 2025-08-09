@@ -4,15 +4,15 @@ const BlogForm = ({ createBlog }) => {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [url, setUrl] = useState('')
-  const [important, setImportant] = useState(false)  // новый state
+  const [important, setImportant] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    createBlog({ title, author, url, important }) // передаем important
+    createBlog({ title, author, url, important, likes: 0 }) // добавляем likes
     setTitle('')
     setAuthor('')
     setUrl('')
-    setImportant(false)  // сброс чекбокса
+    setImportant(false)
   }
 
   return (

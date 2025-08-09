@@ -2,21 +2,33 @@ import { useState } from 'react'
 
 const Blog = ({ blog, user, onDelete, onUpdate, onToggleImportant }) => {
   const [isEditing, setIsEditing] = useState(false)
+  const [detailsVisible, setDetailsVisible] = useState(false)
   const [title, setTitle] = useState(blog.title)
   const [author, setAuthor] = useState(blog.author)
   const [url, setUrl] = useState(blog.url)
+  const [likes, setLikes] = useState(blog.likes || 0)
 
   const blogStyle = {
     padding: 10,
     border: '1px solid #ddd',
     borderRadius: 4,
     marginBottom: 10,
-    backgroundColor: blog.important ? '#ffd6d6' : '#f9f9f9' // выделение для важных
+    backgroundColor: blog.important ? '#ffd6d6' : '#f9f9f9'
   }
 
   const handleSave = () => {
-    onUpdate(blog.id, { title, author, url, important: blog.important })
+    onUpdate(blog.id, { title, author, url, likes, important: blog.important })
     setIsEditing(false)
+  }
+
+  const toggleDetails = () => {
+    setDetailsVisible(!detailsVisible)
+  }
+
+  const handleLike = () => {
+    const newLikes = likes + 1
+    setLikes(newLikes)
+    onUpdate(blog.id, { title, author, url, likes: newLikes, important: blog.important })
   }
 
   return (
@@ -43,8 +55,24 @@ const Blog = ({ blog, user, onDelete, onUpdate, onToggleImportant }) => {
         </>
       ) : (
         <>
-          <strong>{blog.title}</strong> by {blog.author}
-          <div><a href={blog.url} target="_blank" rel="noreferrer">{blog.url}</a></div>
+          <div>
+            <strong>{blog.title}</strong> by {blog.author}{' '}
+            <button onClick={toggleDetails} style={{ marginLeft: 8 }}>
+              {detailsVisible ? 'Hide' : 'View'}
+            </button>
+          </div>
+
+          {detailsVisible && (
+            <div style={{ marginTop: 8 }}>
+              <div><a href={blog.url} target="_blank" rel="noreferrer">{blog.url}</a></div>
+              <div>
+                Likes: {likes}{' '}
+                <button onClick={handleLike} style={{ marginLeft: 8 }}>Like</button>
+              </div>
+              <div>Added by: {blog.user?.name || 'Unknown'}</div>
+            </div>
+          )}
+
           {user && user.username === blog.user?.username && (
             <div style={{ marginTop: 8 }}>
               <button onClick={() => onToggleImportant(blog.id)} style={{ marginRight: 8 }}>
