@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PropTypes from 'prop-types'
 
 const Blog = ({ blog, user, onDelete, onUpdate, onToggleImportant }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -86,6 +87,28 @@ const Blog = ({ blog, user, onDelete, onUpdate, onToggleImportant }) => {
       )}
     </div>
   )
+}
+
+Blog.propTypes = {
+  blog: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    author: PropTypes.string,
+    url: PropTypes.string,
+    likes: PropTypes.number,
+    important: PropTypes.bool,
+    user: PropTypes.shape({
+      username: PropTypes.string,
+      name: PropTypes.string,
+      id: PropTypes.string
+    }),
+  }).isRequired,
+  user: PropTypes.shape({
+    username: PropTypes.string.isRequired
+  }),
+  onDelete: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  onToggleImportant: PropTypes.func.isRequired
 }
 
 export default Blog
