@@ -14,7 +14,8 @@ blogsRouter.post('/', userExtractor, async (request, response) => {
   const user = request.user
   const blog = new Blog(request.body)
 
-  blog.likes = blog.likes | 0
+  blog.likes = blog.likes || 0
+  blog.important = blog.important || false   // добавлено
   blog.user = user._id
 
   if (!blog.title || !blog.url) {
@@ -48,7 +49,7 @@ blogsRouter.delete('/:id', userExtractor, async (request, response) => {
 })
 
 blogsRouter.put('/:id', async (request, response) => {
-  const { title, author, url, likes } = request.body
+  const { title, author, url, likes, important } = request.body 
 
   const blog = await Blog.findById(request.params.id)
 
@@ -60,6 +61,7 @@ blogsRouter.put('/:id', async (request, response) => {
   blog.author = author
   blog.url = url
   blog.likes = likes
+  blog.important = important  // добавлено
 
   const updatedBlog = await blog.save()
 

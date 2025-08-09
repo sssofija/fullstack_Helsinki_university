@@ -4,13 +4,15 @@ const BlogForm = ({ createBlog }) => {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
   const [url, setUrl] = useState('')
+  const [important, setImportant] = useState(false)  // новый state
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    createBlog({ title, author, url })
+    createBlog({ title, author, url, important }) // передаем important
     setTitle('')
     setAuthor('')
     setUrl('')
+    setImportant(false)  // сброс чекбокса
   }
 
   return (
@@ -38,6 +40,16 @@ const BlogForm = ({ createBlog }) => {
           style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
           required
         />
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            type="checkbox"
+            checked={important}
+            onChange={({ target }) => setImportant(target.checked)}
+          />
+          Mark as Important
+        </label>
+
         <button
           type="submit"
           style={{
