@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
 import loginService from './services/login'
+import userService from './services/users'
 import Notification from './components/Notification'
 import BlogForm from './components/BlogForm'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
   const [username, setUsername] = useState('')
+  const [name, setName] = useState('')      
   const [password, setPassword] = useState('')
   const [user, setUser] = useState(null)
   const [message, setMessage] = useState(null)
   const [messageType, setMessageType] = useState('success')
+  const [registerMode, setRegisterMode] = useState(false) 
 
   useEffect(() => {
     blogService.getAll().then(blogs => setBlogs(blogs))
@@ -26,6 +29,12 @@ const App = () => {
     }
   }, [])
 
+  const showMessage = (text, type = 'success') => {
+    setMessage(text)
+    setMessageType(type)
+    setTimeout(() => setMessage(null), 5000)
+  }
+
   const handleLogin = async (event) => {
     event.preventDefault()
     try {
@@ -38,6 +47,20 @@ const App = () => {
       showMessage(`Welcome ${user.name}`, 'success')
     } catch (exception) {
       showMessage('Wrong username or password', 'error')
+    }
+  }
+
+  const handleRegister = async (event) => {
+    event.preventDefault()
+    try {
+      await userService.create({ username, name, password })
+      showMessage(`User ${username} registered successfully! Please log in.`, 'success')
+      setRegisterMode(false)
+      setUsername('')
+      setName('')
+      setPassword('')
+    } catch (error) {
+      showMessage('Error registering user', 'error')
     }
   }
 
@@ -57,53 +80,108 @@ const App = () => {
     }
   }
 
-  const showMessage = (text, type = 'success') => {
-    setMessage(text)
-    setMessageType(type)
-    setTimeout(() => setMessage(null), 5000)
-  }
-
   if (user === null) {
     return (
       <div style={{ maxWidth: 300, margin: '50px auto', padding: 20, border: '1px solid #ccc', borderRadius: 8 }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 20 }}>Login to application</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: 20 }}>{registerMode ? 'Register' : 'Login to application'}</h2>
         <Notification message={message} type={messageType} />
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <label>
-            <span style={{ display: 'block', marginBottom: 4 }}>Username</span>
-            <input
-              type="text"
-              value={username}
-              name="Username"
-              onChange={({ target }) => setUsername(target.value)}
-              style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-            />
-          </label>
-          <label>
-            <span style={{ display: 'block', marginBottom: 4 }}>Password</span>
-            <input
-              type="password"
-              value={password}
-              name="Password"
-              onChange={({ target }) => setPassword(target.value)}
-              style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-            />
-          </label>
-          <button
-            type="submit"
-            style={{
-              padding: '10px 0',
-              borderRadius: 4,
-              border: 'none',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              fontSize: 16,
-              cursor: 'pointer'
-            }}
-          >
-            Login
-          </button>
-        </form>
+
+        {registerMode ? (
+          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <label>
+              <span style={{ display: 'block', marginBottom: 4 }}>Username</span>
+              <input
+                type="text"
+                value={username}
+                name="Username"
+                onChange={({ target }) => setUsername(target.value)}
+                required
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              />
+            </label>
+            <label>
+              <span style={{ display: 'block', marginBottom: 4 }}>Name</span>
+              <input
+                type="text"
+                value={name}
+                name="Name"
+                onChange={({ target }) => setName(target.value)}
+                required
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              />
+            </label>
+            <label>
+              <span style={{ display: 'block', marginBottom: 4 }}>Password</span>
+              <input
+                type="password"
+                value={password}
+                name="Password"
+                onChange={({ target }) => setPassword(target.value)}
+                required
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              />
+            </label>
+            <button
+              type="submit"
+              style={{
+                padding: '10px 0',
+                borderRadius: 4,
+                border: 'none',
+                backgroundColor: '#1976d2',
+                color: 'white',
+                fontSize: 16,
+                cursor: 'pointer'
+              }}
+            >
+              Register
+            </button>
+            <button type="button" onClick={() => setRegisterMode(false)} style={{ marginTop: 10 }}>
+              Back to Login
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <label>
+              <span style={{ display: 'block', marginBottom: 4 }}>Username</span>
+              <input
+                type="text"
+                value={username}
+                name="Username"
+                onChange={({ target }) => setUsername(target.value)}
+                required
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              />
+            </label>
+            <label>
+              <span style={{ display: 'block', marginBottom: 4 }}>Password</span>
+              <input
+                type="password"
+                value={password}
+                name="Password"
+                onChange={({ target }) => setPassword(target.value)}
+                required
+                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+              />
+            </label>
+            <button
+              type="submit"
+              style={{
+                padding: '10px 0',
+                borderRadius: 4,
+                border: 'none',
+                backgroundColor: '#1976d2',
+                color: 'white',
+                fontSize: 16,
+                cursor: 'pointer'
+              }}
+            >
+              Login
+            </button>
+            <button type="button" onClick={() => setRegisterMode(true)} style={{ marginTop: 10 }}>
+              Register new user
+            </button>
+          </form>
+        )}
       </div>
     )
   }
