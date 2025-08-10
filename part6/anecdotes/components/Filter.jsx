@@ -4,13 +4,9 @@ import { setFilter } from '../reducers/filterReducer'
 const Filter = () => {
   const dispatch = useDispatch()
 
-  const handleChange = (event) => {
-    dispatch(setFilter(event.target.value))
-  }
-
   return (
     <div style={{ marginBottom: 10 }}>
-      <input onChange={handleChange} placeholder="filter anecdotes" />
+      <input onChange={(e) => dispatch(setFilter(e.target.value))} placeholder="filter anecdotes" />
     </div>
   )
 }
